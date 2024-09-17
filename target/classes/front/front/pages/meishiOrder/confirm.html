@@ -1,0 +1,250 @@
+<!-- 个人中心 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>确认下单</title>
+		<link rel="stylesheet" href="../../layui/css/layui.css">
+		<!-- 样式 -->
+		<link rel="stylesheet" href="../../css/style.css" />
+		<!-- 主题（主要颜色设置） -->
+		<link rel="stylesheet" href="../../css/theme.css" />
+		<!-- 通用的css -->
+		<link rel="stylesheet" href="../../css/common.css" />
+	</head>
+    <style>
+
+        .index-title {
+            text-align: center;
+            box-sizing: border-box;
+            width: 980px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .index-title span {
+            padding: 0 10px;
+            line-height: 1.4;
+        }
+    </style>
+	<body>
+
+    <div id="app">
+        <!-- 轮播图 -->
+        <div class="layui-carousel" id="swiper">
+            <div carousel-item id="swiper-item">
+                <div v-for="(item,index) in swiperList" v-bind:key="index">
+                    <img class="swiper-item" :src="item.img">
+                </div>
+            </div>
+        </div>
+        <!-- 轮播图 -->
+
+        <!-- 标题 -->
+        <!--<h2 style="margin-top: 20px;" class="index-title">CONFIRM / ORDER</h2>
+        <div class="line-container">
+            <p class="line"> 确认下单 </p>
+        </div>-->
+        <div class="index-title sub_backgroundColor" :style='{"padding":"10px","boxShadow":"0 0 2px rgba(160, 67, 26, 1)","margin":"10px auto","borderColor":"rgba(0,0,0,.3)","color":"rgba(255, 255, 255, 1)","borderRadius":"4px","borderWidth":"0","fontSize":"20px","borderStyle":"solid","height":"auto"}'>
+            <span>CONFIRM / ORDER</span><span>确认下单</span>
+        </div>
+        <!-- 标题 -->
+
+        <div class="container">
+		            <h2>清单列表</h2>
+            <table class="layui-table" lay-skin="nob" style="border: 3px dotted #EEEEEE;margin: 20px 0;">
+                <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>现价</th>
+                    <th>数量</th>
+                    <th>总价</th>
+                </tr>
+                </thead>
+                <tbody>
+
+
+                <tr v-for="(item,index) in dataList" v-bind:key="index">
+                    <td style="display: flex;text-align: left;">
+                        <img :src="item.meishiPhoto" style="width: 100px;height: 100px;object-fit: cover;">
+                        <div style="margin-left: 10px;margin-top: 40px;">
+                            {{item.meishiName}}
+                        </div>
+                    </td>
+                    <td  style="width: 150px;">{{item.meishiNewMoney}} RMB</td>
+                    <td style="width: 140px;">
+                        {{item.buyNumber}}
+                    </td>
+                    <td style="width: 100px;">{{(item.meishiNewMoney*item.buyNumber).toFixed(2)}} RMB</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="btn-container">
+                <div v-if="this.meishiOrderPaymentTypes == 1" style="margin-right: 150px">
+						<span style="font-size: 15px;font-weight: bold;color: #ce0b07;text-decoration:line-through">
+							总价：{{totalMoney.toFixed(2)}}RMB
+						</span>
+                    </br>
+                    <span style="font-size: 18px;font-weight: bold;color: #ce0b07">
+							实付价：{{(totalMoney * zhekou).toFixed(2)}}RMB
+						</span>
+                </div>
+				<div v-if="this.meishiOrderPaymentTypes == 2" style="margin-right: 150px;margin-top: 20px">
+					<span style="font-size: 18px;font-weight: bold;color: #ce0b07;margin-right: 20px;">
+						实付价：{{(totalMoney).toFixed(2)}}积分
+					</span>
+				</div>
+                <button @click="payClick()" type="button" style="margin-top: -65px" class="layui-btn layui-btn-lg btn-theme">
+                    <i class="layui-icon">&#xe657;</i> 支付
+                </button>
+            </div>
+        </div>
+    </div>
+		<!-- layui -->
+		<script src="../../layui/layui.js"></script>
+		<!-- vue -->
+		<script src="../../js/vue.js"></script>
+        <!-- 引入element组件库 -->
+        <script src="../../xznstatic/js/element.min.js"></script>
+        <!-- 引入element样式 -->
+        <link rel="stylesheet" href="../../xznstatic/css/element.min.css">
+		<!-- 组件配置信息 -->
+		<script src="../../js/config.js"></script>
+		<!-- 扩展插件配置信息 -->
+		<script src="../../modules/config.js"></script>
+		<!-- 工具方法 -->
+		<script src="../../js/utils.js"></script>
+		<!-- 校验格式工具类 -->
+		<script src="../../js/validate.js"></script>
+
+		<script>
+            var vue = new Vue({
+                el: '#app',
+                data: {
+                    // 轮播图
+                    swiperList: [{
+                        img: '../../img/banner.jpg'
+                    }],
+                    dataList: [],
+                    meishiOrderPaymentTypes: 1,
+                    zhekou:1,
+                    // 当前用户信息
+                    user: {}
+                },
+                computed: {
+                    totalMoney: function() {
+                        var total = 0;
+                        for (var item of this.dataList) {
+                            total += item.meishiNewMoney * item.buyNumber
+                        }
+                        return total;
+                    }
+                },
+                methods: {
+                    jump(url) {
+                        jump(url)
+                    }
+                    // 正常下单，生成订单，减少余额，添加积分，减少库存，修改状态已支付
+                    ,payClick() {
+                    let data={
+                            meishis:localStorage.getItem('meishis'),
+			yonghuId: localStorage.getItem('userid'),
+		meishiOrderPaymentTypes: vue.meishiOrderPaymentTypes,
+                    }
+                        // 获取商品详情信息
+                        layui.http.request(`meishiOrder/order`, 'POST', data, (res) => {
+                            // 订单编号
+                            var orderId = genTradeNo();
+                            if(res.code == 0){
+                                alert("下单成功，点击确定后跳转 我的订单页面");
+                                window.location.href='../meishiOrder/list.html';
+                            }
+                            window.location.href='../meishiOrder/list.html';
+                        });
+                    }
+                }
+            });
+
+            layui.use(['layer', 'element', 'carousel', 'http', 'jquery', 'form', 'upload'], function() {
+                var layer = layui.layer;
+                var element = layui.element;
+                var carousel = layui.carousel;
+                var http = layui.http;
+                var jquery = layui.jquery;
+                var form = layui.form;
+                var upload = layui.upload;
+
+                // 充值
+                jquery('#btn-recharge').click(function(e) {
+                    layer.open({
+                        type: 2,
+                        title: '用户充值',
+                        area: ['900px', '600px'],
+                        content: '../shop-recharge/recharge.html'
+                    });
+                });
+
+                // 获取轮播图 数据
+                http.request('config/list', 'get', {
+                    page: 1,
+                    limit: 5
+                }, function(res) {
+                    if (res.data.list.length > 0) {
+                        var swiperItemHtml = '';
+                        for (let item of res.data.list) {
+                            if (item.value && item.value != "" && item.value != null) {
+                                swiperItemHtml +=
+                                        '<div>' +
+                                        '<img class="swiper-item" src="' + item.value + '">' +
+                                        '</div>';
+                            }
+                        }
+                        jquery('#swiper-item').html(swiperItemHtml);
+                        // 轮播图
+                        carousel.render({
+                            elem: '#swiper',
+                            width: swiper.width,height:swiper.height,
+                            arrow: swiper.arrow,
+                            anim: swiper.anim,
+                            interval: swiper.interval,
+                            indicator: "none"
+                        });
+                    }
+                });
+
+                // 获取美食购买的清单列表
+				var meishis = localStorage.getItem('meishis');
+				// 转换成json类型，localstorage保存的是string数据
+				vue.dataList = JSON.parse(meishis);
+
+                // 用户当前用户信息
+                let table = localStorage.getItem("userTable");
+                if (!table) {
+                    layer.msg('请先登录', {
+                        time: 2000,
+                        icon: 5
+                    }, function () {
+                        window.parent.location.href = '../login/login.jsp';
+                    });
+                }
+                http.request(`yonghu/session`, 'get', {}, function(data) {
+                    vue.user = data.data;
+                    // 用户当前用户折扣信息
+                    http.request('dictionary/page', 'get', {
+                        dicCode: "huiyuandengji_types",
+                        dicName: "会员等级类型",
+                        codeIndexStart: vue.user.huiyuandengjiTypes,
+                        codeIndexEnd: vue.user.huiyuandengjiTypes,
+                    }, function(res) {
+                        if(res.data.list.length >0){
+                            vue.zhekou = res.data.list[0].beizhu;
+                        }
+                    })
+                });
+            });
+        </script>
+	</body>
+</html>
